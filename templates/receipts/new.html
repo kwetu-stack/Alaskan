@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Receipt-X™</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body class="bg-light">
+
+<div class="container-fluid p-4">
+
+    <!-- HEADER -->
+    <div class="row mb-4">
+
+        <div class="col">
+            <h2>ALASKAN SALES™</h2>
+            <h5 class="text-muted">Receipt-X™</h5>
+        </div>
+
+        <div class="col text-end">
+
+            <h4>Receipt No</h4>
+
+            <h3 class="text-primary">
+                {{ receipt.receipt_number }}
+            </h3>
+
+        </div>
+
+    </div>
+
+    <!-- CUSTOMER -->
+    <div class="card mb-4">
+
+        <div class="card-header">
+            Customer Details
+        </div>
+
+        <div class="card-body">
+
+            <input
+                class="form-control"
+                value="{{ receipt.customer_name }}"
+                placeholder="Walk-in Customer">
+
+        </div>
+
+    </div>
+
+    <!-- ADD PRODUCT -->
+    <div class="card mb-4">
+
+        <div class="card-header">
+            Add Product
+        </div>
+
+        <div class="card-body">
+
+            <!-- PRODUCT ENTRY (AJAX) -->
+<div class="card mb-4">
+
+    <div class="card-header">
+        Add Product
+    </div>
+
+    <div class="card-body">
+
+        <div class="row">
+
+            <!-- PRODUCT -->
+            <div class="col-md-5">
+
+                <label class="form-label">Search Product</label>
+
+                <select id="product_id" class="form-select" required>
+
+                    {% for product in products %}
+                        <option value="{{ product.id }}">
+                            {{ product.display_name }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            <!-- QTY -->
+            <div class="col-md-2">
+
+                <label class="form-label">Qty</label>
+
+                <input
+                    id="quantity"
+                    type="number"
+                    class="form-control"
+                    step="0.01"
+                    required>
+
+            </div>
+
+            <!-- PRICE -->
+            <div class="col-md-2">
+
+                <label class="form-label">Price</label>
+
+                <input
+                    id="unit_price"
+                    type="number"
+                    class="form-control"
+                    step="0.01"
+                    required>
+
+            </div>
+
+            <!-- BUTTON -->
+            <div class="col-md-2 d-grid">
+
+                <label>&nbsp;</label>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="addItem()">
+
+                    ADD ITEM
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ITEMS TABLE -->
+<div class="card mb-4">
+
+    <div class="card-header">
+        Receipt Items
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-bordered table-hover">
+
+            <thead class="table-dark">
+
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th width="120">Qty</th>
+                <th width="150">Price</th>
+                <th width="150">Total</th>
+                <th width="100">Action</th>
+            </tr>
+
+            </thead>
+
+            <tbody id="itemsTable">
+
+                {% if items %}
+
+                    {% for item in items %}
+
+                    <tr>
+
+                        <td>{{ loop.index }}</td>
+
+                        <td>{{ item.product.display_name }}</td>
+
+                        <td>{{ item.quantity }}</td>
+
+                        <td>{{ item.unit_price }}</td>
+
+                        <td>{{ item.total }}</td>
+
+                        <td>
+                            <button class="btn btn-sm btn-danger">
+                                ❌
+                            </button>
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">
+                            No products added.
+                        </td>
+                    </tr>
+
+                {% endif %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- TOTAL -->
+<div class="row">
+
+    <div class="col">
+        <h3>Grand Total</h3>
+    </div>
+
+    <div class="col text-end">
+        <h2 class="text-success">
+            KES {{ "%.2f"|format(total) }}
+        </h2>
+    </div>
+
+</div>
+
+<hr>
+
+<!-- ACTIONS -->
+<div class="d-flex justify-content-between">
+
+    <a href="{{ url_for('receipts.new_receipt') }}" class="btn btn-secondary btn-lg">
+        New Receipt
+    </a>
+
+    <button class="btn btn-success btn-lg">
+        Print Receipt
+    </button>
+
+</div>
+
+
+<!-- AJAX SCRIPT -->
+<script>
+
+async function addItem() {
+
+    const product_id = document.getElementById("product_id").value;
+    const quantity = document.getElementById("quantity").value;
+    const unit_price = document.getElementById("unit_price").value;
+
+    const response = await fetch("/receipts/api/add-item", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            product_id,
+            quantity,
+            unit_price
+        })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+
+        // reload simple version (we will remove later)
+        location.reload();
+
+    } else {
+
+        alert("Failed to add item");
+
+    }
+}
+
+</script>

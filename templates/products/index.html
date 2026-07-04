@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Products</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Products</h2>
+
+    <table class="table table-striped table-bordered">
+
+        <thead class="table-dark">
+
+            <tr>
+                <th>Supplier</th>
+                <th>Brand</th>
+                <th>Variant</th>
+                <th>Display Name</th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+        {% for product in products %}
+
+            <tr>
+
+                <td>{{ product.supplier.name }}</td>
+                <td>{{ product.brand }}</td>
+                <td>{{ product.variant }}</td>
+                <td>{{ product.display_name }}</td>
+
+            </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+</body>
+</html>
