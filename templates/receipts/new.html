@@ -16,20 +16,35 @@
 
 <div class="container-fluid p-4">
 
-    <!-- HEADER -->
-    <div class="row mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
 
-        <div class="col">
+        <div>
+
             <h2>ALASKAN SALES™</h2>
+
             <h5 class="text-muted">Receipt-X™</h5>
+
         </div>
 
-        <div class="col text-end">
+        <div>
+
+            <a href="{{ url_for('home') }}"
+               class="btn btn-secondary">
+
+                ← Dashboard
+
+            </a>
+
+        </div>
+
+        <div class="text-end">
 
             <h4>Receipt No</h4>
 
             <h3 class="text-primary">
+
                 {{ receipt.receipt_number }}
+
             </h3>
 
         </div>
@@ -37,23 +52,13 @@
     </div>
 
     <!-- CUSTOMER -->
-    <div class="card mb-4">
-
-        <div class="card-header">
-            Customer Details
-        </div>
-
-        <div class="card-body">
-
-            <input
-                class="form-control"
-                value="{{ receipt.customer_name }}"
-                placeholder="Walk-in Customer">
-
-        </div>
-
-    </div>
-
+    <input
+    type="text"
+    name="customer_name"
+    id="customer_name"
+    class="form-control"
+    value="{{ receipt.customer_name }}"
+    placeholder="Walk-in Customer">
     <!-- ADD PRODUCT -->
     <div class="card mb-4">
 
@@ -79,15 +84,25 @@
 
                 <label class="form-label">Search Product</label>
 
-                <select id="product_id" class="form-select" required>
+                <select
+    id="product_id"
+    class="form-select"
+    onchange="updatePrice()"
+    required>
 
-                    {% for product in products %}
-                        <option value="{{ product.id }}">
-                            {{ product.display_name }}
-                        </option>
-                    {% endfor %}
+    {% for product in products %}
 
-                </select>
+        <option
+            value="{{ product.id }}"
+            data-price="{{ product.selling_price }}">
+
+            {{ product.display_name }}
+
+        </option>
+
+    {% endfor %}
+
+</select>
 
             </div>
 
@@ -233,19 +248,48 @@
 <!-- ACTIONS -->
 <div class="d-flex justify-content-between">
 
-    <a href="{{ url_for('receipts.new_receipt') }}" class="btn btn-secondary btn-lg">
+    <a href="{{ url_for('receipts.new_receipt') }}"
+       class="btn btn-secondary btn-lg">
+
         New Receipt
+
     </a>
 
-    <button class="btn btn-success btn-lg">
-        Print Receipt
-    </button>
+    <form method="POST"
+          action="{{ url_for('receipts.save_receipt') }}">
+
+        <input
+    type="hidden"
+    id="hidden_customer_name"
+    name="customer_name">
+
+        <button
+            type="submit"
+            class="btn btn-success btn-lg">
+
+            Save Receipt
+
+        </button>
+
+    </form>
 
 </div>
 
 
 <!-- AJAX SCRIPT -->
 <script>
+    function updatePrice() {
+
+    const product =
+        document.getElementById("product_id");
+
+    const selected =
+        product.options[product.selectedIndex];
+
+    document.getElementById("unit_price").value =
+        selected.dataset.price;
+
+}
 
 async function addItem() {
 
@@ -259,10 +303,11 @@ async function addItem() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            product_id,
-            quantity,
-            unit_price
-        })
+    customer_name: document.getElementById("customer_name").value,
+    product_id,
+    quantity,
+    unit_price
+})
     });
 
     const data = await response.json();
@@ -278,5 +323,22 @@ async function addItem() {
 
     }
 }
+
+</script>
+<script>
+
+const saveForm = document.querySelector('form[action$="/save"]');
+
+saveForm.addEventListener("submit", function () {
+
+    document.getElementById("hidden_customer_name").value =
+        document.getElementById("customer_name").value;
+
+});
+
+</script>
+<script>
+
+updatePrice();
 
 </script>

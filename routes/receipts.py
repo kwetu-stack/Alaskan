@@ -6,7 +6,8 @@ from flask import (
     request,
     redirect,
     url_for,
-    session
+    session,
+    jsonify,
 )
 
 from models import db
@@ -14,12 +15,7 @@ from models.product import Product
 from models.receipt import Receipt
 from models.receipt_item import ReceiptItem
 
-
-receipts_bp = Blueprint(
-    "receipts",
-    __name__,
-    url_prefix="/receipts"
-)
+receipts_bp = Blueprint("receipts", __name__, url_prefix="/receipts")
 
 
 # ----------------------------
@@ -36,7 +32,7 @@ def new_receipt():
             customer_name="Walk-in Customer",
             created_by=1,
             total_amount=0,
-            status="OPEN"
+            status="OPEN",
         )
 
         db.session.add(receipt)
@@ -46,13 +42,9 @@ def new_receipt():
 
     receipt = Receipt.query.get(session["receipt_id"])
 
-    products = Product.query.order_by(
-        Product.display_name
-    ).all()
+    products = Product.query.order_by(Product.display_name).all()
 
-    items = ReceiptItem.query.filter_by(
-        receipt_id=receipt.id
-    ).all()
+    items = ReceiptItem.query.filter_by(receipt_id=receipt.id).all()
 
     total = sum(item.total for item in items)
 
@@ -61,7 +53,7 @@ def new_receipt():
         receipt=receipt,
         products=products,
         items=items,
-        total=total
+        total=total,
     )
 
 
@@ -87,7 +79,7 @@ def add_item():
         product_id=product_id,
         quantity=quantity,
         unit_price=unit_price,
-        total=total
+        total=total,
     )
 
     db.session.add(item)
@@ -101,7 +93,8 @@ def add_item():
     db.session.commit()
 
     return redirect(url_for("receipts.new_receipt"))
-from flask import jsonify
+
+
 @receipts_bp.route("/api/add-item", methods=["POST"])
 def api_add_item():
 
@@ -109,8 +102,9 @@ def api_add_item():
         return jsonify({"error": "No active receipt"}), 400
 
     receipt_id = session["receipt_id"]
-
     data = request.get_json()
+
+    customer_name = data.get("customer_name", "Walk-in Customer")
 
     product_id = int(data["product_id"])
     quantity = float(data["quantity"])
@@ -123,26 +117,70 @@ def api_add_item():
         product_id=product_id,
         quantity=quantity,
         unit_price=unit_price,
-        total=total
+        total=total,
     )
 
     db.session.add(item)
     db.session.commit()
 
     receipt = Receipt.query.get(receipt_id)
+    receipt.customer_name = customer_name
 
     receipt.total_amount = sum(i.total for i in receipt.items)
 
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "item": {
-            "id": item.id,
-            "product": item.product.display_name,
-            "quantity": item.quantity,
-            "unit_price": item.unit_price,
-            "total": item.total
-        },
-        "grand_total": receipt.total_amount
-    })
+    return jsonify(
+        {
+            "success": True,
+            "item": {
+                "id": item.id,
+                "product": item.product.display_name,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "total": item.total,
+            },
+            "grand_total": receipt.total_amount,
+        }
+    )
+
+
+# ----------------------------
+# SAVE RECEIPT
+# ----------------------------
+@receipts_bp.route("/save", methods=["POST"])
+def save_receipt():
+
+    if "receipt_id" not in session:
+        return redirect(url_for("receipts.new_receipt"))
+
+    receipt = Receipt.query.get(session["receipt_id"])
+
+    # Update customer name
+    receipt.customer_name = request.form.get("customer_name", "Walk-in Customer")
+
+    # Calculate final total
+    receipt.total_amount = sum(item.total for item in receipt.items)
+
+    # Close receipt
+    receipt.status = "SAVED"
+
+    db.session.commit()
+
+    # Receipt finished
+    session.pop("receipt_id", None)
+
+    return redirect(url_for("receipts.view_receipt", receipt_id=receipt.id))
+
+
+# ----------------------------
+# VIEW RECEIPT
+# ----------------------------
+@receipts_bp.route("/view/<int:receipt_id>")
+def view_receipt(receipt_id):
+
+    receipt = Receipt.query.get_or_404(receipt_id)
+
+    items = ReceiptItem.query.filter_by(receipt_id=receipt.id).all()
+
+    return render_template("receipts/view.html", receipt=receipt, items=items)

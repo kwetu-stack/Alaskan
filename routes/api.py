@@ -24,9 +24,10 @@ def search_products():
     ).limit(10).all()
 
     return jsonify([
-        {
-            "id": product.id,
-            "name": product.display_name
-        }
-        for product in products
-    ])
+    {
+        "id": product.id,
+        "name": product.display_name,
+        "price": product.selling_price
+    }
+    for product in products
+])

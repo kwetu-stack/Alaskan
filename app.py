@@ -8,6 +8,7 @@ from routes.auth import auth_bp
 from routes.products import products_bp
 from routes.receipts import receipts_bp
 from routes.api import api_bp
+from flask import render_template
 
 
 def create_app():
@@ -27,7 +28,7 @@ def create_app():
 
     @app.route("/")
     def home():
-        return "<h1>ALASKAN SALES™ is Running!</h1>"
+        return render_template("dashboard.html")
 
     return app
 
