@@ -11,14 +11,28 @@ products_bp = Blueprint(
 
 
 @products_bp.route("/")
-
 def index():
 
-    products = Product.query.order_by(
-        Product.display_name.asc()
-    ).all()
+    try:
 
-    return render_template(
-        "products/index.html",
-        products=products
-    )
+        products = Product.query.order_by(
+            Product.display_name.asc()
+        ).all()
+
+        return render_template(
+            "products/index.html",
+            products=products
+        )
+
+    except Exception as e:
+
+        import traceback
+
+        return (
+            "<pre>"
+            + str(e)
+            + "\n\n"
+            + traceback.format_exc()
+            + "</pre>",
+            500,
+        )
