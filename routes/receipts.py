@@ -24,9 +24,13 @@ receipts_bp = Blueprint("receipts", __name__, url_prefix="/receipts")
 @receipts_bp.route("/new", methods=["GET"])
 def new_receipt():
 
-    # Create receipt only once per session
-    if "receipt_id" not in session:
+    receipt = None
+    receipt_id = session.get("receipt_id")
 
+    if receipt_id is not None:
+        receipt = db.session.get(Receipt, receipt_id)
+
+    if receipt is None:
         receipt = Receipt(
             receipt_number=f"R{datetime.now().strftime('%Y%m%d%H%M%S')}",
             customer_name="Walk-in Customer",
@@ -37,10 +41,7 @@ def new_receipt():
 
         db.session.add(receipt)
         db.session.commit()
-
         session["receipt_id"] = receipt.id
-
-    receipt = Receipt.query.get(session["receipt_id"])
 
     products = Product.query.order_by(Product.display_name).all()
 

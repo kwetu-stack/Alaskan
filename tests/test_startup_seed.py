@@ -24,6 +24,16 @@ class StartupSeedTestCase(unittest.TestCase):
     def test_startup_seeds_products_from_master_workbook(self):
         self.assertGreater(Product.query.count(), 0)
 
+    def test_new_receipt_recovers_from_stale_session_receipt(self):
+        with self.app.test_client() as client:
+            with client.session_transaction() as session:
+                session["receipt_id"] = 999999
+
+            response = client.get("/receipts/new")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Receipt-X", response.data)
+
 
 if __name__ == "__main__":
     unittest.main()
