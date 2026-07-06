@@ -18,19 +18,33 @@ from flask import render_template
 
 def initialize_database(app):
     with app.app_context():
-        from models.user import User
 
+        # Import all models so SQLAlchemy knows about them
+        from models.user import User
+        from models.supplier import Supplier
+        from models.product import Product
+        from models.receipt import Receipt
+        from models.receipt_item import ReceiptItem
+
+        # Create tables if they don't exist
+        db.create_all()
+
+        # Create default admin user
         if not User.query.filter_by(username="admin").first():
+
             user = User(
                 full_name="System Administrator",
                 username="admin",
                 role="Admin",
                 active=True,
             )
-            user.set_password(os.environ.get("ADMIN_PASSWORD", "admin123"))
+
+            user.set_password(
+                os.environ.get("ADMIN_PASSWORD", "admin123")
+            )
+
             db.session.add(user)
             db.session.commit()
-
 
 def create_app():
 
