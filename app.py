@@ -1,6 +1,9 @@
 import os
+import logging
+import traceback
 
 from flask import Flask
+from werkzeug.exceptions import HTTPException
 
 from config import Config
 from models import db, login_manager
@@ -50,11 +53,25 @@ def create_app():
     def home():
         return render_template("dashboard.html")
 
+    @app.route("/health")
+    def health():
+        return {"status": "ok"}
+
+    @app.errorhandler(Exception)
+    def log_exception(error):
+        if isinstance(error, HTTPException):
+            return error
+
+        app.logger.error("Unhandled exception: %s", error)
+        app.logger.error(traceback.format_exc())
+        return "Internal Server Error", 500
+
     initialize_database(app)
 
     return app
 
 
+logging.basicConfig(level=logging.INFO)
 app = create_app()
 
 if __name__ == "__main__":
