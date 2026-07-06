@@ -18,8 +18,6 @@ from flask import render_template
 
 def initialize_database(app):
     with app.app_context():
-        db.create_all()
-
         from models.user import User
 
         if not User.query.filter_by(username="admin").first():
