@@ -14,6 +14,38 @@ from routes.products import products_bp
 from routes.receipts import receipts_bp
 from routes.api import api_bp
 from flask import render_template
+from services.import_service import ImportService
+
+
+def seed_initial_products(app):
+    with app.app_context():
+        from models.product import Product
+
+        if Product.query.first():
+            return
+
+        product_master_path = os.path.join(
+            app.root_path,
+            "PRODUCT_MASTER",
+            "RECEIPT-X_PRODUCT_MASTER.xlsx",
+        )
+
+        if not os.path.exists(product_master_path):
+            app.logger.warning(
+                "Product master workbook not found at %s",
+                product_master_path,
+            )
+            return
+
+        try:
+            result = ImportService.import_products(product_master_path)
+            app.logger.info(
+                "Seeded %s products from %s",
+                result.get("created", 0),
+                product_master_path,
+            )
+        except Exception as exc:
+            app.logger.exception("Initial product seeding failed: %s", exc)
 
 
 def initialize_database(app):
@@ -39,12 +71,13 @@ def initialize_database(app):
                 active=True,
             )
 
-            user.set_password(
-                os.environ.get("ADMIN_PASSWORD", "admin123")
-            )
+            user.set_password(os.environ.get("ADMIN_PASSWORD", "admin123"))
 
             db.session.add(user)
             db.session.commit()
+
+        seed_initial_products(app)
+
 
 def create_app():
 
@@ -87,8 +120,4 @@ logging.basicConfig(level=logging.INFO)
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        debug=True
-    )
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)

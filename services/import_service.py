@@ -1,3 +1,5 @@
+import os
+
 from openpyxl import load_workbook
 
 from models import db
@@ -8,16 +10,24 @@ from models.product import Product
 class ImportService:
 
     @staticmethod
+    def resolve_file_path(file_path):
+        if os.path.isabs(file_path):
+            return file_path
+
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return os.path.join(project_root, file_path)
+
+    @staticmethod
     def load_excel(file_path):
         """
         Load an Excel workbook.
         """
-        return load_workbook(file_path)
+        return load_workbook(ImportService.resolve_file_path(file_path))
 
     @staticmethod
     def import_suppliers(file_path):
 
-        workbook = load_workbook(file_path)
+        workbook = load_workbook(ImportService.resolve_file_path(file_path))
 
         created = 0
         skipped = 0
@@ -45,7 +55,7 @@ class ImportService:
     @staticmethod
     def import_products(file_path):
 
-        workbook = load_workbook(file_path)
+        workbook = load_workbook(ImportService.resolve_file_path(file_path))
 
         print("\n========== PRODUCT IMPORT ==========")
         print("Sheets Found:\n")
@@ -58,15 +68,18 @@ class ImportService:
 
         for sheet in workbook.sheetnames:
 
-            print(f"\nLooking for supplier: {sheet}")
+            supplier_name = sheet.strip()
+            print(f"\nLooking for supplier: {supplier_name}")
 
-            supplier = Supplier.query.filter_by(name=sheet.strip()).first()
+            supplier = Supplier.query.filter_by(name=supplier_name).first()
 
             if supplier:
                 print("✓ Supplier Found")
             else:
-                print("✗ Supplier NOT Found")
-                continue
+                supplier = Supplier(name=supplier_name)
+                db.session.add(supplier)
+                db.session.flush()
+                print("✓ Supplier Created")
 
             worksheet = workbook[sheet]
 
@@ -75,8 +88,8 @@ class ImportService:
                 if not row:
                     continue
 
-                brand = row[0]
-                variant = row[1]
+                brand = "" if row[0] is None else str(row[0]).strip()
+                variant = "" if row[1] is None else str(row[1]).strip()
                 selling_price = row[2] if len(row) > 2 and row[2] is not None else 0
                 if not brand or not variant:
                     continue
@@ -91,8 +104,8 @@ class ImportService:
 
                 new_product = Product(
                     supplier_id=supplier.id,
-                    brand=brand.strip(),
-                    variant=variant.strip(),
+                    brand=brand,
+                    variant=variant,
                     display_name=display_name.strip(),
                     selling_price=float(selling_price),
                 )

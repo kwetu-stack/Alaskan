@@ -42,18 +42,24 @@
 
         <tbody>
 
-        {% for product in products %}
+        {% if products %}
+            {% for product in products %}
 
+                <tr>
+
+                    <td>{{ product.supplier.name }}</td>
+                    <td>{{ product.brand }}</td>
+                    <td>{{ product.variant }}</td>
+                    <td>{{ product.display_name }}</td>
+
+                </tr>
+
+            {% endfor %}
+        {% else %}
             <tr>
-
-                <td>{{ product.supplier.name }}</td>
-                <td>{{ product.brand }}</td>
-                <td>{{ product.variant }}</td>
-                <td>{{ product.display_name }}</td>
-
+                <td colspan="4" class="text-center text-muted">No products are available yet.</td>
             </tr>
-
-        {% endfor %}
+        {% endif %}
 
         </tbody>
 
