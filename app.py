@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 
 from config import Config
@@ -9,6 +11,24 @@ from routes.products import products_bp
 from routes.receipts import receipts_bp
 from routes.api import api_bp
 from flask import render_template
+
+
+def initialize_database(app):
+    with app.app_context():
+        db.create_all()
+
+        from models.user import User
+
+        if not User.query.filter_by(username="admin").first():
+            user = User(
+                full_name="System Administrator",
+                username="admin",
+                role="Admin",
+                active=True,
+            )
+            user.set_password(os.environ.get("ADMIN_PASSWORD", "admin123"))
+            db.session.add(user)
+            db.session.commit()
 
 
 def create_app():
@@ -30,12 +50,12 @@ def create_app():
     def home():
         return render_template("dashboard.html")
 
+    initialize_database(app)
+
     return app
 
 
 app = create_app()
-
-import os
 
 if __name__ == "__main__":
     app.run(
