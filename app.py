@@ -78,7 +78,7 @@ def create_app():
         app.logger.error(traceback.format_exc())
         return "Internal Server Error", 500
 
-    #initialize_database(app)
+    initialize_database(app)
 
     return app
 
