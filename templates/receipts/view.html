@@ -27,13 +27,18 @@
 
         <div class="card-body">
 
+            <div class="text-center mb-4">
+                <h2 class="mb-1">MABROUK SHOP ALASKAN</h2>
+                <p class="mb-0 text-muted">Tel: 0713866027</p>
+            </div>
+
             <div class="row mb-3">
 
                 <div class="col-md-6">
 
                     <strong>Customer:</strong>
 
-                    {{ receipt.customer_name }}
+                    {{ receipt.customer_name or "Walk-in Customer" }}
 
                 </div>
 
@@ -123,7 +128,7 @@
 
     <button
         class="btn btn-success"
-        onclick="window.print()">
+        onclick="window.open('{{ url_for('receipts.print_receipt', receipt_id=receipt.id) }}', '_blank')">
 
         Print Receipt
 

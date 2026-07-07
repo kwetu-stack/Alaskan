@@ -58,7 +58,7 @@
     id="customer_name"
     class="form-control"
     value="{{ receipt.customer_name }}"
-    placeholder="Walk-in Customer">
+    placeholder="Enter customer name (e.g., Abuu)">
     <!-- ADD PRODUCT -->
     <div class="card mb-4">
 
@@ -80,29 +80,21 @@
         <div class="row">
 
             <!-- PRODUCT -->
-            <div class="col-md-5">
+            <div class="col-md-5" style="position: relative;">
 
                 <label class="form-label">Search Product</label>
 
-                <select
-    id="product_id"
-    class="form-select"
-    onchange="updatePrice()"
-    required>
+                <input
+                    id="product_search"
+                    type="text"
+                    class="form-control"
+                    placeholder="Start typing to search products..."
+                    autocomplete="off"
+                    required>
 
-    {% for product in products %}
+                <input type="hidden" id="product_id" name="product_id">
 
-        <option
-            value="{{ product.id }}"
-            data-price="{{ product.selling_price }}">
-
-            {{ product.display_name }}
-
-        </option>
-
-    {% endfor %}
-
-</select>
+                <div id="product_suggestions" class="list-group" style="position: absolute; z-index: 2000; display: none; max-height: 200px; overflow:auto; width: 100%;"></div>
 
             </div>
 
@@ -276,68 +268,120 @@
 </div>
 
 
-<!-- AJAX SCRIPT -->
+<!-- AJAX + Autocomplete SCRIPT -->
 <script>
-    function updatePrice() {
+// Serialize products into a plain JS array
+const PRODUCTS = [
+    {% for p in products %}
+    { id: {{ p.id }}, display_name: {{ p.display_name|tojson }}, selling_price: {{ p.selling_price }} }{{ "," if not loop.last }}
+    {% endfor %}
+];
 
-    const product =
-        document.getElementById("product_id");
+// Elements
+const searchInput = document.getElementById('product_search');
+const suggestions = document.getElementById('product_suggestions');
+const hiddenProductId = document.getElementById('product_id');
+const unitPriceInput = document.getElementById('unit_price');
 
-    const selected =
-        product.options[product.selectedIndex];
-
-    document.getElementById("unit_price").value =
-        selected.dataset.price;
-
+function showSuggestions(items) {
+    suggestions.innerHTML = '';
+    if (!items.length) {
+        suggestions.style.display = 'none';
+        return;
+    }
+    items.forEach(p => {
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'list-group-item list-group-item-action';
+        el.textContent = p.display_name;
+        el.dataset.id = p.id;
+        el.dataset.price = p.selling_price;
+        el.addEventListener('click', () => selectProduct(p));
+        suggestions.appendChild(el);
+    });
+    suggestions.style.display = 'block';
 }
 
+function selectProduct(p) {
+    hiddenProductId.value = p.id;
+    searchInput.value = p.display_name;
+    unitPriceInput.value = p.selling_price;
+    suggestions.style.display = 'none';
+}
+
+function filterProducts(query) {
+    const q = (query || '').toLowerCase().trim();
+    if (!q) return [];
+    return PRODUCTS.filter(p => p.display_name.toLowerCase().includes(q)).slice(0, 20);
+}
+
+searchInput.addEventListener('input', (e) => {
+    const q = e.target.value;
+    if (!q) {
+        suggestions.style.display = 'none';
+        hiddenProductId.value = '';
+        return;
+    }
+    const matches = filterProducts(q);
+    showSuggestions(matches);
+});
+
+searchInput.addEventListener('focus', (e) => {
+    const q = e.target.value;
+    if (!q) return;
+    const matches = filterProducts(q);
+    showSuggestions(matches);
+});
+
+// Click outside to close suggestions
+document.addEventListener('click', (e) => {
+    if (!suggestions.contains(e.target) && e.target !== searchInput) {
+        suggestions.style.display = 'none';
+    }
+});
+
 async function addItem() {
+    const product_id = document.getElementById('product_id').value;
+    const quantity = document.getElementById('quantity').value;
+    const unit_price = document.getElementById('unit_price').value;
 
-    const product_id = document.getElementById("product_id").value;
-    const quantity = document.getElementById("quantity").value;
-    const unit_price = document.getElementById("unit_price").value;
+    if (!product_id) {
+        alert('Please select a product from suggestions.');
+        return;
+    }
 
-    const response = await fetch("/receipts/api/add-item", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+    const response = await fetch('/receipts/api/add-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-    customer_name: document.getElementById("customer_name").value,
-    product_id,
-    quantity,
-    unit_price
-})
+            customer_name: document.getElementById('customer_name').value,
+            product_id,
+            quantity,
+            unit_price
+        })
     });
 
     const data = await response.json();
-
     if (data.success) {
-
-        // reload simple version (we will remove later)
         location.reload();
-
     } else {
-
-        alert("Failed to add item");
-
+        alert('Failed to add item');
     }
 }
 
-</script>
-<script>
-
+// Save form customer name
 const saveForm = document.querySelector('form[action$="/save"]');
-
-saveForm.addEventListener("submit", function () {
-
-    document.getElementById("hidden_customer_name").value =
-        document.getElementById("customer_name").value;
-
+saveForm.addEventListener('submit', function () {
+    document.getElementById('hidden_customer_name').value = document.getElementById('customer_name').value;
 });
 
-</script>
-<script>
+// If there is an initial product id set (unlikely) update price
+function updatePrice() {
+    const id = hiddenProductId.value;
+    if (!id) return;
+    const p = PRODUCTS.find(x => String(x.id) === String(id));
+    if (p) unitPriceInput.value = p.selling_price;
+}
 
 updatePrice();
 
