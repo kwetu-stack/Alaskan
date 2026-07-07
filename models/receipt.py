@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from models import db
+from config import now_in_nairobi
 
 
 class Receipt(db.Model):
@@ -10,7 +9,7 @@ class Receipt(db.Model):
 
     receipt_number = db.Column(db.String(30), unique=True, nullable=False)
 
-    receipt_date = db.Column(db.DateTime, default=datetime.utcnow)
+    receipt_date = db.Column(db.DateTime, default=now_in_nairobi)
 
     customer_name = db.Column(db.String(150), nullable=False)
 

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask import (
     Blueprint,
     render_template,
@@ -10,12 +8,14 @@ from flask import (
     jsonify,
 )
 
+from config import now_in_nairobi
 from models import db
 from models.product import Product
 from models.receipt import Receipt
 from models.receipt_item import ReceiptItem
 
 receipts_bp = Blueprint("receipts", __name__, url_prefix="/receipts")
+DEFAULT_RECEIPT_CUSTOMER_NAME = "MABROUK SHOP ALASKAN"
 
 
 # ----------------------------
@@ -32,8 +32,8 @@ def new_receipt():
 
     if receipt is None:
         receipt = Receipt(
-            receipt_number=f"R{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            customer_name="Walk-in Customer",
+            receipt_number=f"R{now_in_nairobi().strftime('%Y%m%d%H%M%S')}",
+            customer_name="",
             created_by=1,
             total_amount=0,
             status="OPEN",
@@ -185,3 +185,13 @@ def view_receipt(receipt_id):
     items = ReceiptItem.query.filter_by(receipt_id=receipt.id).all()
 
     return render_template("receipts/view.html", receipt=receipt, items=items)
+
+
+@receipts_bp.route("/print/<int:receipt_id>")
+def print_receipt(receipt_id):
+
+    receipt = Receipt.query.get_or_404(receipt_id)
+
+    items = ReceiptItem.query.filter_by(receipt_id=receipt.id).all()
+
+    return render_template("receipts/print.html", receipt=receipt, items=items)
