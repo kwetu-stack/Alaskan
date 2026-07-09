@@ -18,6 +18,10 @@ class Receipt(db.Model):
     status = db.Column(db.String(20), default="OPEN")
 
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user = db.relationship(
+    "User",
+    backref="receipts"
+)
 
     items = db.relationship(
         "ReceiptItem", backref="receipt", lazy=True, cascade="all, delete-orphan"

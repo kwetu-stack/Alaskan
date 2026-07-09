@@ -9,12 +9,15 @@ from config import Config
 from models import db, login_manager
 from flask_migrate import Migrate
 
+
 from routes.auth import auth_bp
 from routes.products import products_bp
 from routes.receipts import receipts_bp
 from routes.api import api_bp
 from flask import render_template
 from services.import_service import ImportService
+from services.user_service import create_user
+from routes.dashboard import dashboard_bp
 
 
 def seed_initial_products(app):
@@ -61,23 +64,42 @@ def initialize_database(app):
         # Create tables if they don't exist
         db.create_all()
 
-        # Create default admin user
-        if not User.query.filter_by(username="admin").first():
+        create_user(
+            full_name="System Administrator",
+            username="admin",
+            password=os.environ.get("ADMIN_PASSWORD", "admin123"),
+            role="ADMIN",
+        )
 
-            user = User(
-                full_name="System Administrator",
-                username="admin",
-                role="Admin",
-                active=True,
-            )
+        create_user(
+            full_name="BALOZI",
+            username="balozi",
+            password="balozi123",
+            role="INVOICER",
+        )
 
-            user.set_password(os.environ.get("ADMIN_PASSWORD", "admin123"))
+        create_user(
+            full_name="ERIC",
+            username="eric",
+            password="eric123",
+            role="INVOICER",
+        )
 
-            db.session.add(user)
-            db.session.commit()
+        create_user(
+            full_name="PRUDENCE",
+            username="prudence",
+            password="prudence123",
+            role="INVOICER",
+        )
+
+        create_user(
+            full_name="TUVA",
+            username="tuva",
+            password="tuva123",
+            role="INVOICER",
+        )
 
         seed_initial_products(app)
-
 
 def create_app():
 
@@ -93,10 +115,9 @@ def create_app():
     app.register_blueprint(products_bp)
     app.register_blueprint(receipts_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(dashboard_bp)
 
-    @app.route("/")
-    def home():
-        return render_template("dashboard.html")
+    
 
     @app.route("/health")
     def health():

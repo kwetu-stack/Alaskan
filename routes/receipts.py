@@ -7,12 +7,15 @@ from flask import (
     session,
     jsonify,
 )
-
+from flask_login import login_required, current_user
 from config import now_in_nairobi
 from models import db
 from models.product import Product
 from models.receipt import Receipt
 from models.receipt_item import ReceiptItem
+from services.receipt_service import generate_receipt_number
+
+
 
 receipts_bp = Blueprint("receipts", __name__, url_prefix="/receipts")
 DEFAULT_RECEIPT_CUSTOMER_NAME = "MABROUK SHOP ALASKAN"
@@ -22,6 +25,7 @@ DEFAULT_RECEIPT_CUSTOMER_NAME = "MABROUK SHOP ALASKAN"
 # MAIN SCREEN
 # ----------------------------
 @receipts_bp.route("/new", methods=["GET"])
+@login_required
 def new_receipt():
 
     receipt = None
@@ -32,9 +36,9 @@ def new_receipt():
 
     if receipt is None:
         receipt = Receipt(
-            receipt_number=f"R{now_in_nairobi().strftime('%Y%m%d%H%M%S')}",
+            receipt_number=generate_receipt_number(),
             customer_name="",
-            created_by=1,
+            created_by=current_user.id,
             total_amount=0,
             status="OPEN",
         )
@@ -62,6 +66,7 @@ def new_receipt():
 # ADD ITEM (CORE LOGIC)
 # ----------------------------
 @receipts_bp.route("/add-item", methods=["POST"])
+@login_required
 def add_item():
 
     if "receipt_id" not in session:
@@ -97,6 +102,7 @@ def add_item():
 
 
 @receipts_bp.route("/api/add-item", methods=["POST"])
+@login_required
 def api_add_item():
 
     if "receipt_id" not in session:
@@ -150,6 +156,7 @@ def api_add_item():
 # SAVE RECEIPT
 # ----------------------------
 @receipts_bp.route("/save", methods=["POST"])
+@login_required
 def save_receipt():
 
     if "receipt_id" not in session:
@@ -178,20 +185,37 @@ def save_receipt():
 # VIEW RECEIPT
 # ----------------------------
 @receipts_bp.route("/view/<int:receipt_id>")
+@login_required
 def view_receipt(receipt_id):
 
     receipt = Receipt.query.get_or_404(receipt_id)
 
-    items = ReceiptItem.query.filter_by(receipt_id=receipt.id).all()
+    items = ReceiptItem.query.filter_by(
+        receipt_id=receipt.id
+    ).all()
 
-    return render_template("receipts/view.html", receipt=receipt, items=items)
+    return render_template(
+        "receipts/view.html",
+        receipt=receipt,
+        items=items,
+    )
 
 
+# ----------------------------
+# PRINT RECEIPT
+# ----------------------------
 @receipts_bp.route("/print/<int:receipt_id>")
+@login_required
 def print_receipt(receipt_id):
 
     receipt = Receipt.query.get_or_404(receipt_id)
 
-    items = ReceiptItem.query.filter_by(receipt_id=receipt.id).all()
+    items = ReceiptItem.query.filter_by(
+        receipt_id=receipt.id
+    ).all()
 
-    return render_template("receipts/print.html", receipt=receipt, items=items)
+    return render_template(
+        "receipts/print.html",
+        receipt=receipt,
+        items=items,
+    )
