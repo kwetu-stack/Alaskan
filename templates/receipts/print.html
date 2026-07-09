@@ -10,14 +10,37 @@
     <title>Receipt {{ receipt.receipt_number }}</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/kwetu-theme.css') }}">
 
     <style>
-        /* Print-friendly adjustments */
-        @media print {
-            .no-print { display: none !important; }
+
+        body {
+            background: white;
         }
-        body { background: white; }
-        .container { max-width: 800px; }
+
+        .container {
+            max-width: 800px;
+        }
+
+        @media print {
+
+            .no-print {
+                display: none !important;
+            }
+
+            .card {
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            body {
+                margin: 0;
+            }
+
+        }
+
     </style>
 
 </head>
@@ -26,40 +49,74 @@
 
 <div class="container mt-4">
 
-    <div class="card">
+    <div class="card shadow-sm">
 
         <div class="card-header no-print">
 
-            <h3>Receipt {{ receipt.receipt_number }}</h3>
+            <h3 class="mb-0">Sales Receipt</h3>
 
         </div>
 
         <div class="card-body">
 
+            <!-- COMPANY -->
+
             <div class="text-center mb-4">
+
                 <h2 class="mb-1">MABROUK SHOP ALASKAN</h2>
-                <p class="mb-0 text-muted">Tel: 0713866027</p>
+
+                <p class="mb-0 text-muted">
+                    Malindi, Kenya
+                </p>
+
+                <p class="mb-0 text-muted">
+                    Tel: 0713 866 027
+                </p>
+
             </div>
 
-            <div class="row mb-3">
+            <hr>
+
+            <!-- RECEIPT INFORMATION -->
+
+            <div class="row mb-4">
 
                 <div class="col-md-6">
 
-                    <strong>Customer:</strong>
+                    <p class="mb-1">
+                        <strong>Receipt No:</strong>
+                        {{ receipt.receipt_number }}
+                    </p>
 
-                    {{ receipt.customer_name or "Walk-in Customer" }}
+                    <p class="mb-1">
+                        <strong>Customer:</strong>
+                        {{ receipt.customer_name or "Walk-in Customer" }}
+                    </p>
+
+                    <p class="mb-0">
+                        <strong>Sold By:</strong>
+                        {{ receipt.user.full_name }}
+                    </p>
 
                 </div>
 
-                <div class="col-md-6 text-end">
+                <div class="col-md-6 text-md-end">
 
-                    <strong>Date:</strong>
+                    <p class="mb-1">
+                        <strong>Date:</strong>
+                        {{ receipt.receipt_date.strftime('%d %b %Y %H:%M') }}
+                    </p>
 
-                    {{ receipt.receipt_date.strftime('%d-%m-%Y %H:%M') }}
+                    <p class="mb-0">
+                        <strong>Status:</strong>
+                        {{ receipt.status }}
+                    </p>
 
                 </div>
 
             </div>
+
+            <!-- ITEMS -->
 
             <table class="table table-bordered">
 
@@ -67,11 +124,11 @@
 
                     <tr>
 
-                        <th>#</th>
+                        <th width="60">#</th>
                         <th>Product</th>
-                        <th>Qty</th>
-                        <th>Price</th>
-                        <th>Total</th>
+                        <th width="100">Qty</th>
+                        <th width="120">Price</th>
+                        <th width="140">Total</th>
 
                     </tr>
 
@@ -101,43 +158,75 @@
 
             </table>
 
-            <div class="text-end">
+            <hr>
 
-                <h3>
+            <!-- GRAND TOTAL -->
 
-                    Grand Total :
+            <div class="row">
 
-                    KES {{ "%.2f"|format(receipt.total_amount) }}
+                <div class="col">
 
-                </h3>
+                    <h4>Grand Total</h4>
+
+                </div>
+
+                <div class="col text-end">
+
+                    <h2 class="text-success">
+
+                        KES {{ "%.2f"|format(receipt.total_amount) }}
+
+                    </h2>
+
+                </div>
 
             </div>
 
             <hr>
 
-            <div class="d-flex justify-content-between no-print">
+            <div class="text-center mt-4">
 
-    <div>
+                <p class="mb-0">
+                    Thank you for your business.
+                </p>
 
-        <a href="{{ url_for('home') }}"
-           class="btn btn-secondary">
+                <small class="text-muted">
+                    Powered by ALASKAN SALES™ Receipt-X
+                </small>
 
-            ← Dashboard
+            </div>
 
-        </a>
+            <!-- ACTIONS -->
 
-        <a href="{{ url_for('receipts.new_receipt') }}"
-           class="btn btn-primary">
+            <div class="d-flex justify-content-between mt-4 no-print">
 
-            New Receipt
+                <div>
 
-        </a>
+                    <a href="{{ url_for('dashboard.home') }}"
+                       class="btn btn-secondary">
 
-    </div>
+                        ← Dashboard
 
-    <button class="btn btn-success no-print" onclick="window.print();">Print Receipt</button>
+                    </a>
 
-</div>
+                    <a href="{{ url_for('receipts.new_receipt') }}"
+                       class="btn btn-primary">
+
+                        New Receipt
+
+                    </a>
+
+                </div>
+
+                <button
+                    class="btn btn-success"
+                    onclick="window.print();">
+
+                    Print Receipt
+
+                </button>
+
+            </div>
 
         </div>
 
@@ -146,10 +235,17 @@
 </div>
 
 <script>
-    // Trigger print dialog once page fully loads
-    window.addEventListener('load', function() {
-        setTimeout(function() { window.print(); }, 200);
-    });
+
+window.addEventListener("load", function () {
+
+    setTimeout(function () {
+
+        window.print();
+
+    }, 300);
+
+});
+
 </script>
 
 </body>
